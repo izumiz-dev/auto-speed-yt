@@ -1,8 +1,9 @@
+interface WindowWithChangePlayBackRateInitialized extends Window {
+  changePlayBackRateInitialized?: boolean;
+}
+
 (() => {
   try {
-    interface WindowWithChangePlayBackRateInitialized extends Window {
-      changePlayBackRateInitialized?: boolean;
-    }
 
     const windowWithChangePlayBackRateInitialized =
       window as WindowWithChangePlayBackRateInitialized;
