@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Auto Speed YT",
+  "version": "1.0.0",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "permissions": [
+    "tabs",
+    "scripting",
+    "webNavigation"
+  ],
+  "host_permissions": ["*://*.youtube.com/*"]
+}
