@@ -33,7 +33,6 @@ interface WindowWithChangePlayBackRateInitialized extends Window {
           const video = document.querySelector('video');
           if (video) {
             video.playbackRate = speed;
-            console.log(`Playback rate successfully changed to ${speed}`);
           } else {
             throw new Error('No video element found');
           }

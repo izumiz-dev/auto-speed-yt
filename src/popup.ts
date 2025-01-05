@@ -40,8 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
   getApiKeyFromChromeStorage().then((apiKey) => {
     key = apiKey;
 
-    console.log('key:', key, typeof key);
-
     if (key) {
       if (statusMessage) {
         statusMessage.textContent = 'API Key: Already set';

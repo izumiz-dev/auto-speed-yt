@@ -116,7 +116,6 @@ const determineContentType = async(tabTitle: string, videoDuration: number): Pro
     const geminiRes: GeminiResponse = await askGemini(prompt);
     const resJson: { contentType: string } =
       JSON.parse(geminiRes.candidates[0].content.parts[0].text);
-    console.log(`${videoTitle}:\n ${resJson.contentType}`);
     return resJson.contentType;
   } catch (error) {
     console.error(error);
