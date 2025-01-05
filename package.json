@@ -4,8 +4,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "build": "tsc && cp -r public/* dist/",
-    "dev": "concurrently \"tsc --watch\" cp -r public/* dist/",
+    "build": "tsc && cp -r public/* dist/ && cp src/*.html dist/ && cp src/*.css dist/",
+    "dev": "concurrently \"tsc --watch\" \"cp -r public/* dist/ && cp src/*.html dist/ && cp src/*.css dist/\"",
     "lint": "eslint",
     "lint --fix": "eslint --fix",
     "type-check": "tsc --noEmit"

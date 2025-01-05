@@ -15,7 +15,11 @@
   "permissions": [
     "tabs",
     "scripting",
-    "webNavigation"
+    "webNavigation",
+    "storage"
   ],
-  "host_permissions": ["*://*.youtube.com/*"]
+  "host_permissions": ["*://*.youtube.com/*"],
+  "action": {
+    "default_popup": "popup.html"
+  }
 }
