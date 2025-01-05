@@ -30,12 +30,19 @@ interface WindowWithChangePlayBackRateInitialized extends Window {
 
       function changePlayBackRate(speed: number) {
         try {
-          const video = document.querySelector('video');
-          if (video) {
-            video.playbackRate = speed;
-          } else {
-            throw new Error('No video element found');
-          }
+          chrome.storage.local.get(['extensionEnabled'], (result) => {
+            console.log('Extension enabled:', result.extensionEnabled);
+            if (result.extensionEnabled) {
+              const video = document.querySelector('video');
+              if (video) {
+                video.playbackRate = speed;
+              } else {
+                throw new Error('No video element found');
+              }
+            } else {
+              console.log('Extension is disabled, playback rate change aborted.');
+            }
+          });
         } catch (error) {
           console.error('Error in changePlayBackRate function:', error);
         }

@@ -1,52 +1,13 @@
+import { askGemini } from './lib/gemini';
+import { prompt } from './lib/prompt';
+
 const setTimeOutMilSec: number = 2000;
 const apiEndPoint: string =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
-let geminiApiKey: string = '';
-
-const initializeApiKey = async() => {
-  try {
-    const { geminiApiKey: apiKey } = await chrome.storage.local.get(['geminiApiKey']);
-    geminiApiKey = apiKey;
-  } catch (error) {
-    console.error('Failed to load API key:', error);
-  }
-};
-
-initializeApiKey();
-
-export const askGemini = async(prompt: string) => {
-  if (!geminiApiKey) {
-    throw new Error('API key is not initialized');
-  }
-
-  const response = await fetch(
-    `${apiEndPoint}?key=${geminiApiKey}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          response_schema: {
-            type: 'OBJECT',
-            properties: {
-              contentType: {
-                type: 'STRING',
-                enum: ['music', 'podcast', 'etc']
-              }
-            }
-          }
-        }
-      })
-    });
-  return await response.json();
-};
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.set({ extensionEnabled: false });
+});
 
 chrome.tabs.onUpdated.addListener(async(tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
   const { extensionEnabled } = await chrome.storage.local.get(['extensionEnabled']);
@@ -94,26 +55,9 @@ interface GeminiResponse {
 const determineContentType = async(tabTitle: string, videoDuration: number): Promise<string> => {
   const videoTitle: string = tabTitle.replace(' - YouTube', '');
 
-  const systemPrompt: string = `You are an excellent video profiler.
-  Please tell me the content type of the following YouTube video.
-  Consider the video title and duration,
-  and keep in mind that long videos can be podcasts or music compilations.
-  Respond with one of the following options: music, podcast, or etc.`;
-
-  const prompt: string = `${systemPrompt}
-
-  Video Title: ${videoTitle}
-  Video Duration: ${videoDuration} seconds.
-
-  Which of the following content types best describes this video: music, podcast, or etc? 
-  Explain your reasoning, considering if the title suggests:
-
-  * Music videos or live performances
-  * Artists, songs, albums, or genres
-  * Music-related terms like "official audio" or "lyrics video"`;
-
   try {
-    const geminiRes: GeminiResponse = await askGemini(prompt);
+    const geminiRes: GeminiResponse =
+      await askGemini(prompt(videoTitle, videoDuration), apiEndPoint);
     const resJson: { contentType: string } =
       JSON.parse(geminiRes.candidates[0].content.parts[0].text);
     return resJson.contentType;
@@ -130,63 +74,119 @@ const getVideoIdFromUrl = (url: string): string | null => {
 
 async function handleMusicPage(tabTitle: string, tabUrl: string, tabId: number): Promise<void> {
   let playbackRate: number = 1.0;
+
   try {
+    // 1. まずvideoIdを取得
     const videoId = getVideoIdFromUrl(tabUrl);
     if (!videoId) return;
 
+    // 2. ローカルストレージをチェック
     const storedData = await chrome.storage.local.get([videoId]);
+
+    // 3. キャッシュがある場合の処理
     if (storedData[videoId]) {
       const { videoTitle, videoType, playbackRate } = storedData[videoId];
+
+      // ストレージを更新
       await chrome.storage.local.set({
         videoTitle,
         videoType,
         playbackRate,
         loadStatus: 'Local cache'
       });
-      chrome.tabs.sendMessage(tabId, { action: 'changePlayBackRate', speed: playbackRate });
-      chrome.runtime.sendMessage({ action: 'updatePopup' });
-      return;
-    }
 
-    chrome.tabs.sendMessage(tabId, { action: 'getVideoDuration' }, async(response) => {
-      const videoDuration = response?.duration ?? 0;
-      const contentType: string = await determineContentType(tabTitle, videoDuration);
-
+      // content.jsを一度だけ実行
       await chrome.scripting.executeScript({
         target: { tabId: tabId },
         files: ['content.js']
       });
 
-      switch (contentType) {
-      case 'music':
-        playbackRate = 1.0;
-        break;
-      case 'podcast':
-        playbackRate = 1.25;
-        break;
-      case 'etc':
-        playbackRate = 2.0;
-        break;
+      // 少し待機してからメッセージを送信
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      try {
+        await chrome.tabs.sendMessage(tabId, {
+          action: 'changePlayBackRate',
+          speed: playbackRate
+        });
+      } catch (error) {
+        console.error('Failed to send message to tab:', error);
       }
 
-      chrome.tabs.sendMessage(tabId, {
+      try {
+        chrome.runtime.sendMessage({ action: 'updatePopup' });
+      } catch (error) {
+        console.error('Failed to send message to update popup:', error);
+      }
+      return;
+    }
+
+    // 4. キャッシュがない場合の処理
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['content.js']
+    });
+
+    // 少し待機
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 動画の長さを取得
+    const videoDuration = await new Promise<number>((resolve, reject) => {
+      chrome.tabs.sendMessage(tabId, { action: 'getVideoDuration' }, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(response?.duration ?? 0);
+        }
+      });
+    }).catch(error => {
+      console.error('Failed to get video duration:', error);
+      return 0;
+    });
+
+    // コンテンツタイプを判定
+    const contentType: string = await determineContentType(tabTitle, videoDuration);
+
+    // 再生速度を設定
+    const speedMap = {
+      'music': 1.0,
+      'podcast': 1.25,
+      'etc': 2.0
+    } as const;
+
+    playbackRate = speedMap[contentType as keyof typeof speedMap];
+
+    // 再生速度を変更
+    try {
+      await chrome.tabs.sendMessage(tabId, {
         action: 'changePlayBackRate',
         speed: playbackRate
       });
+    } catch (error) {
+      console.error('Failed to send message to tab:', error);
+    }
 
-      // 動画タイトル、種類、再生速度をChromeストレージに保存
-      chrome.storage.local.set({
-        [videoId]: { videoTitle: tabTitle, videoType: contentType, playbackRate: playbackRate },
+    // ストレージを更新
+    await chrome.storage.local.set({
+      [videoId]: {
         videoTitle: tabTitle,
         videoType: contentType,
-        playbackRate: playbackRate,
-        loadStatus: 'Gemini API'
-      });
-
-      chrome.runtime.sendMessage({ action: 'updatePopup' });
+        playbackRate: playbackRate
+      },
+      videoTitle: tabTitle,
+      videoType: contentType,
+      playbackRate: playbackRate,
+      loadStatus: 'Gemini API'
     });
+
+    try {
+      chrome.runtime.sendMessage({ action: 'updatePopup' });
+    } catch (error) {
+      console.error('Failed to send message to update popup:', error);
+    }
 
   } catch (err) {
     console.error('Error in handleMusicPage:', err);
+    throw err;
   }
 }
