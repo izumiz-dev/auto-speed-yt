@@ -2,7 +2,27 @@ interface WindowWithChangePlayBackRateInitialized extends Window {
   changePlayBackRateInitialized?: boolean;
 }
 
-(() => {
+const changePlayBackRate = (speed: number): void => {
+  try {
+    chrome.storage.local.get(['extensionEnabled'], (result) => {
+      console.log('Extension enabled:', result.extensionEnabled);
+      if (result.extensionEnabled) {
+        const video = document.querySelector('video');
+        if (video) {
+          video.playbackRate = speed;
+        } else {
+          throw new Error('No video element found');
+        }
+      } else {
+        console.log('Extension is disabled, playback rate change aborted.');
+      }
+    });
+  } catch (error) {
+    console.error('Error in changePlayBackRate function:', error);
+  }
+};
+
+((): void => {
   try {
 
     const windowWithChangePlayBackRateInitialized =
@@ -27,26 +47,6 @@ interface WindowWithChangePlayBackRateInitialized extends Window {
             console.error('Error changing playback rate:', error);
           }
         });
-
-      function changePlayBackRate(speed: number) {
-        try {
-          chrome.storage.local.get(['extensionEnabled'], (result) => {
-            console.log('Extension enabled:', result.extensionEnabled);
-            if (result.extensionEnabled) {
-              const video = document.querySelector('video');
-              if (video) {
-                video.playbackRate = speed;
-              } else {
-                throw new Error('No video element found');
-              }
-            } else {
-              console.log('Extension is disabled, playback rate change aborted.');
-            }
-          });
-        } catch (error) {
-          console.error('Error in changePlayBackRate function:', error);
-        }
-      }
     }
   } catch (error) {
     console.error('Error in the script:', error);

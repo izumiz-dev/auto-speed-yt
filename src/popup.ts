@@ -1,6 +1,6 @@
 console.log('popup.js loaded');
 
-const setApiKeyToChromeStorage = async(geminiApiKey: string): Promise<void> => {
+const setApiKeyToChromeStorage = async (geminiApiKey: string): Promise<void> => {
   try {
     await chrome.storage.local.set({ geminiApiKey });
   } catch (error) {
@@ -8,7 +8,7 @@ const setApiKeyToChromeStorage = async(geminiApiKey: string): Promise<void> => {
   }
 };
 
-const getApiKeyFromChromeStorage = async(): Promise<string> => {
+const getApiKeyFromChromeStorage = async (): Promise<string> => {
   try {
     const { geminiApiKey } = await chrome.storage.local.get(['geminiApiKey']);
     return geminiApiKey;
@@ -18,17 +18,33 @@ const getApiKeyFromChromeStorage = async(): Promise<string> => {
   }
 };
 
-const updateVideoInfo = (title: string, type: string, playbackRate: number, loadStatus: string) => {
+const updateVideoInfo = (
+  title: string,
+  type: string,
+  playbackRate: number,
+  loadStatus: string
+): void => {
   const videoTitleElement = document.getElementById('video-title');
   const videoTypeElement = document.getElementById('video-type');
   const playbackRateElement = document.getElementById('playback-rate');
-  const loadStatusElement = document.getElementById('load-status'); // 追加
+  const loadStatusElement = document.getElementById('load-status');
   if (videoTitleElement && videoTypeElement && playbackRateElement && loadStatusElement) {
     videoTitleElement.textContent = `Title: ${title}`;
     videoTypeElement.textContent = `Kind: ${type}`;
     playbackRateElement.textContent = `Playback Rate: ${playbackRate}`;
-    loadStatusElement.textContent = `Processed by: ${loadStatus}`; // 追加
+    loadStatusElement.textContent = `Processed by: ${loadStatus}`;
   }
+};
+
+const updatePopupContent = (): void => {
+  chrome.storage.local.get([
+    'videoTitle', 'videoType', 'playbackRate', 'loadStatus'
+  ], (result) => {
+    const { videoTitle, videoType, playbackRate, loadStatus } = result;
+    if (videoTitle && videoType && playbackRate !== undefined) {
+      updateVideoInfo(videoTitle, videoType, playbackRate, loadStatus || '');
+    }
+  });
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -81,17 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePopupContent();
       }
     });
-
-    function updatePopupContent() {
-      chrome.storage.local.get([
-        'videoTitle', 'videoType', 'playbackRate', 'loadStatus'
-      ], (result) => {
-        const { videoTitle, videoType, playbackRate, loadStatus } = result;
-        if (videoTitle && videoType && playbackRate !== undefined) {
-          updateVideoInfo(videoTitle, videoType, playbackRate, loadStatus || '');
-        }
-      });
-    }
 
     form.addEventListener('submit', (e: SubmitEvent) => {
       e.preventDefault();

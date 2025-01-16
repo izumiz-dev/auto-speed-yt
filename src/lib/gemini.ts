@@ -1,6 +1,6 @@
 let cachedGeminiApiKey: string | null = null;
 
-const getGeminiApiKey = async(): Promise<string> => {
+const getGeminiApiKey = async (): Promise<string> => {
   if (cachedGeminiApiKey) {
     return cachedGeminiApiKey;
   }
@@ -10,7 +10,8 @@ const getGeminiApiKey = async(): Promise<string> => {
   return geminiApiKey;
 };
 
-export const askGemini = async(prompt: string, apiEndPoint: string) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const askGemini = async (prompt: string, apiEndPoint: string): Promise<any> => {
   const geminiApiKey = await getGeminiApiKey();
 
   try {

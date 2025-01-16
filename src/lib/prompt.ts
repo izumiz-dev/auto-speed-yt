@@ -4,7 +4,7 @@ const systemPrompt: string = `You are an excellent video profiler.
   and keep in mind that long videos can be podcasts or music compilations.
   Respond with one of the following options: music, podcast, or etc.`;
 
-export const prompt = (videoTitle: string, videoDuration: number) => `${systemPrompt}
+export const prompt = (videoTitle: string, videoDuration: number): string => `${systemPrompt}
 
   Video Title: ${videoTitle}
   Video Duration: ${videoDuration} seconds.

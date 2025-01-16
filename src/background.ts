@@ -9,12 +9,12 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({ extensionEnabled: false });
 });
 
-chrome.tabs.onUpdated.addListener(async(tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
   const { extensionEnabled } = await chrome.storage.local.get(['extensionEnabled']);
   if (extensionEnabled === false) return;
   if (changeInfo.url && changeInfo.url.includes('youtube.com/watch?v=')) {
     try {
-      setTimeout(async() => {
+      setTimeout(async () => {
         const updatedTab: chrome.tabs.Tab = await chrome.tabs.get(tabId);
         const updatedTitle: string = updatedTab.title || '';
         await handleMusicPage(updatedTitle, changeInfo.url || '', tabId);
@@ -26,12 +26,12 @@ chrome.tabs.onUpdated.addListener(async(tabId: number, changeInfo: chrome.tabs.T
 });
 
 chrome.webNavigation.onCompleted.addListener(
-  async(details: chrome.webNavigation.WebNavigationFramedCallbackDetails) => {
+  async (details: chrome.webNavigation.WebNavigationFramedCallbackDetails) => {
     const { extensionEnabled } = await chrome.storage.local.get(['extensionEnabled']);
     if (extensionEnabled === false) return;
     if (details.url && details.url.includes('youtube.com/watch?v=')) {
       try {
-        setTimeout(async() => {
+        setTimeout(async () => {
           const updatedTab: chrome.tabs.Tab = await chrome.tabs.get(details.tabId);
           const updatedTitle: string = updatedTab.title || '';
           await handleMusicPage(updatedTitle, details.url || '', details.tabId);
@@ -52,7 +52,7 @@ interface GeminiResponse {
   }[];
 }
 
-const determineContentType = async(tabTitle: string, videoDuration: number): Promise<string> => {
+const determineContentType = async (tabTitle: string, videoDuration: number): Promise<string> => {
   const videoTitle: string = tabTitle.replace(' - YouTube', '');
 
   try {
@@ -76,18 +76,14 @@ async function handleMusicPage(tabTitle: string, tabUrl: string, tabId: number):
   let playbackRate: number = 1.0;
 
   try {
-    // 1. まずvideoIdを取得
     const videoId = getVideoIdFromUrl(tabUrl);
     if (!videoId) return;
 
-    // 2. ローカルストレージをチェック
     const storedData = await chrome.storage.local.get([videoId]);
 
-    // 3. キャッシュがある場合の処理
     if (storedData[videoId]) {
       const { videoTitle, videoType, playbackRate } = storedData[videoId];
 
-      // ストレージを更新
       await chrome.storage.local.set({
         videoTitle,
         videoType,
@@ -95,13 +91,11 @@ async function handleMusicPage(tabTitle: string, tabUrl: string, tabId: number):
         loadStatus: 'Local cache'
       });
 
-      // content.jsを一度だけ実行
       await chrome.scripting.executeScript({
         target: { tabId: tabId },
         files: ['content.js']
       });
 
-      // 少し待機してからメッセージを送信
       await new Promise(resolve => setTimeout(resolve, 500));
 
       try {
@@ -121,16 +115,13 @@ async function handleMusicPage(tabTitle: string, tabUrl: string, tabId: number):
       return;
     }
 
-    // 4. キャッシュがない場合の処理
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ['content.js']
     });
 
-    // 少し待機
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // 動画の長さを取得
     const videoDuration = await new Promise<number>((resolve, reject) => {
       chrome.tabs.sendMessage(tabId, { action: 'getVideoDuration' }, (response) => {
         if (chrome.runtime.lastError) {
@@ -144,10 +135,8 @@ async function handleMusicPage(tabTitle: string, tabUrl: string, tabId: number):
       return 0;
     });
 
-    // コンテンツタイプを判定
     const contentType: string = await determineContentType(tabTitle, videoDuration);
 
-    // 再生速度を設定
     const speedMap = {
       'music': 1.0,
       'podcast': 1.25,
@@ -156,7 +145,6 @@ async function handleMusicPage(tabTitle: string, tabUrl: string, tabId: number):
 
     playbackRate = speedMap[contentType as keyof typeof speedMap];
 
-    // 再生速度を変更
     try {
       await chrome.tabs.sendMessage(tabId, {
         action: 'changePlayBackRate',
@@ -166,7 +154,6 @@ async function handleMusicPage(tabTitle: string, tabUrl: string, tabId: number):
       console.error('Failed to send message to tab:', error);
     }
 
-    // ストレージを更新
     await chrome.storage.local.set({
       [videoId]: {
         videoTitle: tabTitle,
