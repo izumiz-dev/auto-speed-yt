@@ -1,36 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html>
+  <hade>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="popup.css">
-  </head>
-  <body>
-    <div class="header">
-      <h1>Auto Speed YT</h1>
-      <a href="https://github.com/izumiz-dev/auto-speed-yt" target="_blank">View on GitHub</a>
-    </div>
-    <form id="api-key-form">
-      <input
-        type="password"
-        id="api-key"
-        placeholder="Input your API key from aistudio.google.com"
-      >
-      <button type="submit">Save</button>
-    </form>
-    <div class="controls-wrapper">
-      <div id="status-message" class="status-text">Status: </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="extension-toggle">
-        <span class="toggle-slider"></span>
-        Enable Extension
-      </label>
-    </div>
-    <div id="video-info">
-      <p id="video-title">Title: </p>
-      <p id="video-type">Kind: </p>
-      <p id="playback-rate">Playback Rate: </p>
-      <p id="load-status">Processed by: </p>
-    </div>
     <script src="popup.js"></script>
+  </hade>
+  <body>
+    <div id="root"></div>
   </body>
 </html>

@@ -7,7 +7,7 @@ const buildOptions = {
   entryPoints: [
     'src/background.ts',
     'src/content.ts',
-    'src/popup.ts',
+    'src/popup.tsx',
     'src/lib/prompt.ts'
   ],
   bundle: true,
@@ -18,8 +18,24 @@ const buildOptions = {
   minify: !isDev,
   sourcemap: isDev,
   tsconfig: 'tsconfig.json',
-  loader: { '.json': 'text' }
+  loader: { '.json': 'text' },
+  jsxFactory: 'h',
+  jsxFragment: 'Fragment'
 }
+
+const buildLogger = {
+  name: 'build-logger',
+  setup(build) {
+    build.onEnd(result => {
+      if (result.errors.length === 0) {
+        const now = new Date().toISOString().replace('T', ' ').slice(0, 19)
+        console.log(`✅ [${now}] Build completed successfully`)
+      }
+    })
+  }
+}
+
+buildOptions.plugins = [buildLogger]
 
 async function copyAssets() {
   await mkdir('dist', { recursive: true })

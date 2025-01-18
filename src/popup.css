@@ -67,7 +67,7 @@
 /* Base styles */
 body {
   width: 400px;
-  height: 170px;
+  height: 200px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--color-background);
   padding: var(--spacing-sm);

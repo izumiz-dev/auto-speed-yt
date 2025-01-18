@@ -1,22 +1,66 @@
 console.log('popup.js loaded');
 
-const setApiKeyToChromeStorage = async (geminiApiKey: string): Promise<void> => {
-  try {
-    await chrome.storage.local.set({ geminiApiKey });
-  } catch (error) {
-    console.error(error);
-  }
-};
+import { render } from 'preact';
+import { getApiKeyFromChromeStorage, setApiKeyToChromeStorage } from './lib/apiKey';
 
-const getApiKeyFromChromeStorage = async (): Promise<string> => {
-  try {
-    const { geminiApiKey } = await chrome.storage.local.get(['geminiApiKey']);
-    return geminiApiKey;
-  } catch (error) {
-    console.error(error);
-    return '';
+window.addEventListener('DOMContentLoaded', () => {
+  const root = document.getElementById('root');
+  if (root) {
+    render(<MainPopup/>, root);
   }
-};
+})
+
+
+const MainPopup = () => {
+  return (
+    <>
+      <PopupHeader />
+      <form id="api-key-form">
+        <input
+          type="password"
+          id="api-key"
+          placeholder="Input your API key from aistudio.google.com"
+        />
+        <button type="submit">Save</button>
+      </form>
+      <div class="controls-wrapper">
+        <div id="status-message" class="status-text">Status: </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="extension-toggle" />
+          <span class="toggle-slider"></span>
+          Enable Extension
+        </label>
+      </div>
+      <VideoInfoElement
+        title="Title: "
+        kind="Kind: "
+        playbackRate="Playback Rate: "
+        loadFrom="Processed by: "
+      />
+    </>
+  );
+}
+
+const PopupHeader = () => (
+  <div class="header">
+    <h1>Auto Speed YT</h1>
+    <a href="https://github.com/izumiz-dev/auto-speed-yt" target="_blank">View on GitHub</a>
+  </div>
+)
+
+const VideoInfoElement = ({ title = '', kind = '', playbackRate = '', loadFrom = ''}) => {
+  return (
+    <div id="video-info">
+      <p id="video-title">Title: {title}</p>
+      <p id="video-type">Kind: {kind}</p>
+      <p id="playback-rate">Playback Rate: {playbackRate}</p>
+      <p id="load-status">Processed by: {loadFrom}</p>
+    </div>
+  );
+}
+
+// fooobarrr
+
 
 const updateVideoInfo = (
   title: string,
@@ -117,3 +161,4 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({ extensionEnabled: toggleCheckbox.checked });
   });
 });
+

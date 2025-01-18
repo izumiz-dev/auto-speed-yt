@@ -17,6 +17,7 @@
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@types/chrome": "^0.0.287",
+    "@types/copyfiles": "~2.4.4",
     "@types/node": "^22.10.3",
     "copyfiles": "^2.4.1",
     "esbuild": "^0.24.2",
@@ -26,5 +27,8 @@
     "rimraf": "^6.0.1",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.19.0"
+  },
+  "dependencies": {
+    "preact": "^10.25.4"
   }
 }
